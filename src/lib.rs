@@ -4,6 +4,7 @@ use core::convert::TryFrom;
 
 use usb_device::class_prelude::{
     DescriptorWriter, EndpointIn, EndpointOut, InterfaceNumber, UsbBus, UsbBusAllocator, UsbClass,
+    UsbError,
 };
 
 pub struct MidiClass<'a, B>
@@ -28,16 +29,21 @@ where
             in_ep: alloc.bulk(64),
         }
     }
+
+    pub fn read(&self, buf: &mut [u8]) -> Result<usize, UsbError> {
+        self.out_ep.read(buf)
+    }
+
+    pub fn write(&self, buf: &[u8]) -> Result<usize, UsbError> {
+        self.in_ep.write(buf)
+    }
 }
 
 impl<'a, B> UsbClass<B> for MidiClass<'a, B>
 where
     B: UsbBus,
 {
-    fn get_configuration_descriptors(
-        &self,
-        writer: &mut DescriptorWriter,
-    ) -> Result<(), usb_device::UsbError> {
+    fn get_configuration_descriptors(&self, writer: &mut DescriptorWriter) -> Result<(), UsbError> {
         writer.interface(
             self.audio_control_if,
             0x01, // Audio class
